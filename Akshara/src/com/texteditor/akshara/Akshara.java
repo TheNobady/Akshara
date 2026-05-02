@@ -1,0 +1,157 @@
+package com.texteditor.akshara;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import com.sun.jna.Structure;
+
+public class Akshara {
+
+	public static final String APP_NAME = "Akshara";
+	public static LibC.Termios defaultAttributes;
+	public static int rows = 10;
+	public static int columns = 10;
+	public static String VERSION = "v1";
+
+	public static void main(String[] args) throws IOException {
+		System.out.println("Hello World!!!");
+
+		enableRawMode();
+		initEditor();
+		
+		while (true) {
+
+			refreshScreen();
+			int key = readKey();
+			handleKey(key);
+
+		}
+	}
+
+	private static void initEditor() {
+		LibC.Winsize winsize = getWindowSize();		
+		columns = winsize.ws_col;
+		rows = winsize.ws_row;
+	}
+
+	private static void refreshScreen() {
+		
+		StringBuilder builder =  new StringBuilder();
+		
+		builder.append("\033[2J");
+		builder.append("\033[H");
+
+		for (int i = 0; i < rows - 1; i++) {
+			builder.append(">\r\n");
+		}
+		
+		String statusbar = APP_NAME + " - " + VERSION;
+		builder.append("\033[7m" + statusbar + 
+				" ".repeat(Math.max(0, columns - statusbar.length())) + "\033[0m");
+		
+		builder.append("\033[H");
+		
+		System.out.println(builder);
+	}
+
+	private static void handleKey(int key) {
+		if (key == 'q') {
+			System.out.print("\033[2J");
+			System.out.print("\033[H");
+			LibC.INSTANCE.tcsetattr(LibC.SYSTEM_OUT_FD, LibC.TCSAFLUSH, defaultAttributes);
+			System.exit(1);
+		}
+
+	}
+
+	private static int readKey() throws IOException {
+		return System.in.read();
+	}
+
+	private static void enableRawMode() {
+		// Getting the current attributes of the system
+		LibC.Termios termios = new LibC.Termios();
+		int returnCode = LibC.INSTANCE.tcgetattr(LibC.SYSTEM_OUT_FD, termios);
+
+		defaultAttributes = LibC.Termios.of(termios);
+
+		if (returnCode != 0) {
+			// internal error
+			System.err.println("Some error occured ");
+			System.exit(1);
+		}
+
+		// With the help of bitwise negate the values such has turn off echoing,
+		// canonical etc...
+		termios.c_lflag &= ~(LibC.ECHO | LibC.ICANON | LibC.IEXTEN | LibC.ISIG);
+		termios.c_iflag &= ~(LibC.IXON | LibC.ICRNL);
+		termios.c_oflag &= ~(LibC.OPOST);
+
+//		termios.c_cc[LibC.VMIN] = 0;
+//		termios.c_cc[LibC.VTIME] = 1;
+
+		returnCode = LibC.INSTANCE.tcsetattr(LibC.SYSTEM_OUT_FD, LibC.TCSAFLUSH, termios);
+
+	}
+	
+	private static LibC.Winsize getWindowSize(){
+		final LibC.Winsize winsize = new LibC.Winsize();
+		final int returnCode = LibC.INSTANCE.ioctl(LibC.SYSTEM_OUT_FD, LibC.TIOCGWINSZ, winsize);
+		
+		if(returnCode != 0) {
+			System.err.println("ioctl failed");
+			System.exit(1);
+		}
+		
+		return winsize;
+		
+	}
+}
+
+interface LibC extends Library {
+
+	int SYSTEM_OUT_FD = 0;
+	int ISIG = 1, ICANON = 2, ECHO = 10, TCSAFLUSH = 2, IXON = 2000, ICRNL = 400, IEXTEN = 100000, OPOST = 1, VMIN = 6,
+			VTIME = 5, TIOCGWINSZ = 0x5413;
+
+	LibC INSTANCE = Native.load("c", LibC.class);
+
+	@Structure.FieldOrder(value = { "c_iflag", "c_oflag", "c_cflag", "c_lflag", "c_cc" })
+	class Termios extends Structure {
+		public int c_iflag; /* input modes */
+		public int c_oflag; /* output modes */
+		public int c_cflag; /* control modes */
+		public int c_lflag; /* local modes */
+		public byte[] c_cc = new byte[19]; /* special characters */
+
+		public static Termios of(Termios t) {
+			Termios clone = new Termios();
+			clone.c_iflag = t.c_iflag;
+			clone.c_oflag = t.c_oflag;
+			clone.c_cflag = t.c_cflag;
+			clone.c_lflag = t.c_lflag;
+			clone.c_cc = t.c_cc;
+			return clone;
+		}
+
+		@Override
+		public String toString() {
+			return "Termios [c_iflag=" + c_iflag + ", c_oflag=" + c_oflag + ", c_cflag=" + c_cflag + ", c_lflag="
+					+ c_lflag + ", c_cc=" + Arrays.toString(c_cc) + "]";
+		}
+	}
+	
+	@Structure.FieldOrder(value = {"ws_row", "ws_col", "ws_xpixel", "ws_ypixel"})
+	public class Winsize extends Structure{
+		public short ws_row, ws_col, ws_xpixel, ws_ypixel;
+	}
+
+	int tcgetattr(int fd, Termios termios);
+
+	int tcsetattr(int fd, int optional_actions, Termios termios);
+	
+	int ioctl(int fd, int opt, Winsize winze);
+
+}

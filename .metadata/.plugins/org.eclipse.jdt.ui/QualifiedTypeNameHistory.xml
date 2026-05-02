@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+    <fullyQualifiedTypeName name="java.security.DomainCombiner"/>
+    <fullyQualifiedTypeName name="com.sun.jna.Structure"/>
+    <fullyQualifiedTypeName name="com.sun.jna.Structure.FieldOrder"/>
+    <fullyQualifiedTypeName name="com.texteditor.akshara.LibC"/>
+    <fullyQualifiedTypeName name="com.texteditor.akshara.LibC.Termios"/>
+    <fullyQualifiedTypeName name="com.texteditor.akshara.LibC.Winsize"/>
+    <fullyQualifiedTypeName name="java.lang.StringBuilder"/>
+</qualifiedTypeNameHistroy>

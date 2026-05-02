@@ -1,0 +1,72 @@
+package com.texteditor.akshara;
+
+import java.util.Arrays;
+
+import com.sun.jna.Library;
+import com.sun.jna.Structure;
+import com.sun.jna.Native;
+
+public class Akshara {
+	public static void main(String[] args) {
+		System.out.println("Hello World!!!");
+		//Getting the current attributes of the system
+		LibC.Termios termios = new LibC.Termios();
+		int returnCode = LibC.INSTANCE.tcgetattr(LibC.SYSTEM_OUT_FD, termios );
+		
+		if(returnCode != 0) {
+			//internal error 
+			System.err.println("Some error occured ");
+			System.exit(1);
+		}
+		
+		termios.c_lflag &= ~(LibC.ECHO | LibC.ICANON | LibC.IEXTEN | LibC.ISIG);
+		termios.c_iflag &= ~(LibC.IXON | LibC.ICRNL);
+		termios.c_oflag &= ~(LibC.OPOST);
+		
+//		termios.c_cc[LibC.VMIN] = 0;
+//		termios.c_cc[LibC.VTIME] = 1;
+		
+		returnCode = LibC.INSTANCE.tcsetattr(LibC.SYSTEM_OUT_FD, LibC.TCSAFLUSH, termios);
+		
+		
+	}
+}
+
+interface LibC extends Library {
+
+	int SYSTEM_OUT_FD = 0;
+	int ISIG = 1, ICANON = 2, ECHO = 10, TCSAFLUSH = 2, IXON = 2000, ICRNL = 400, IEXTEN = 100000, OPOST = 1, VMIN = 6,
+			VTIME = 5, TIOCGWINSZ = 0x5413;
+
+	LibC INSTANCE = Native.load("c", LibC.class);
+
+	@Structure.FieldOrder(value = { "c_iflag", "c_oflag", "c_cflag", "c_lflag", "c_cc" })
+	class Termios extends Structure {
+		public int c_iflag; /* input modes */
+		public int c_oflag; /* output modes */
+		public int c_cflag; /* control modes */
+		public int c_lflag; /* local modes */
+		public byte[] c_cc = new byte[19]; /* special characters */
+
+		public static Termios of(Termios t) {
+			Termios clone = new Termios();
+			clone.c_iflag = t.c_iflag;
+			clone.c_oflag = t.c_oflag;
+			clone.c_cflag = t.c_cflag;
+			clone.c_lflag = t.c_lflag;
+			clone.c_cc = t.c_cc;
+			return clone;
+		}
+
+		@Override
+		public String toString() {
+			return "Termios [c_iflag=" + c_iflag + ", c_oflag=" + c_oflag + ", c_cflag=" + c_cflag + ", c_lflag="
+					+ c_lflag + ", c_cc=" + Arrays.toString(c_cc) + "]";
+		}
+	}
+
+	int tcgetattr(int fd, Termios termios);
+
+	int tcsetattr(int fd, int optional_actions, Termios termios);
+
+}
