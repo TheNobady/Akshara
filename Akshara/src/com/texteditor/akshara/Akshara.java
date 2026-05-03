@@ -20,7 +20,7 @@ public class Akshara {
 
 		enableRawMode();
 		initEditor();
-		
+
 		while (true) {
 
 			refreshScreen();
@@ -31,7 +31,7 @@ public class Akshara {
 	}
 
 	private static void initEditor() {
-		LibC.Winsize winsize = getWindowSize();		
+		LibC.Winsize winsize = getWindowSize();
 		columns = winsize.ws_col;
 		rows = winsize.ws_row;
 	}
@@ -48,8 +48,12 @@ public class Akshara {
 		}
 		
 		String statusbar = APP_NAME + " - " + VERSION;
-		builder.append("\033[7m" + statusbar + 
-				" ".repeat(Math.max(0, columns - statusbar.length())) + "\033[0m");
+		builder.append("\033[7m")
+				.append(APP_NAME)
+				.append(" - ")
+				.append(VERSION)
+				.append(" ".repeat(Math.max(0, columns - statusbar.length())))
+				.append("\033[0m");
 		
 		builder.append("\033[H");
 		
@@ -95,27 +99,32 @@ public class Akshara {
 		returnCode = LibC.INSTANCE.tcsetattr(LibC.SYSTEM_OUT_FD, LibC.TCSAFLUSH, termios);
 
 	}
-	
-	private static LibC.Winsize getWindowSize(){
+
+	private static LibC.Winsize getWindowSize() {
 		final LibC.Winsize winsize = new LibC.Winsize();
 		final int returnCode = LibC.INSTANCE.ioctl(LibC.SYSTEM_OUT_FD, LibC.TIOCGWINSZ, winsize);
-		
-		if(returnCode != 0) {
+
+		if (returnCode != 0) {
 			System.err.println("ioctl failed");
 			System.exit(1);
 		}
-		
+
 		return winsize;
-		
+
 	}
 }
 
+
+
+//This interface will help use make direct Linux syscalls i.e., provide an interface between a process and the operating system
 interface LibC extends Library {
 
 	int SYSTEM_OUT_FD = 0;
 	int ISIG = 1, ICANON = 2, ECHO = 10, TCSAFLUSH = 2, IXON = 2000, ICRNL = 400, IEXTEN = 100000, OPOST = 1, VMIN = 6,
 			VTIME = 5, TIOCGWINSZ = 0x5413;
-
+	
+	
+	//This creates a dynamic proxy object and every method call on INSTANCE becomes a real native syscall under the hood
 	LibC INSTANCE = Native.load("c", LibC.class);
 
 	@Structure.FieldOrder(value = { "c_iflag", "c_oflag", "c_cflag", "c_lflag", "c_cc" })
@@ -142,16 +151,16 @@ interface LibC extends Library {
 					+ c_lflag + ", c_cc=" + Arrays.toString(c_cc) + "]";
 		}
 	}
-	
-	@Structure.FieldOrder(value = {"ws_row", "ws_col", "ws_xpixel", "ws_ypixel"})
-	public class Winsize extends Structure{
+
+	@Structure.FieldOrder(value = { "ws_row", "ws_col", "ws_xpixel", "ws_ypixel" })
+	public class Winsize extends Structure {
 		public short ws_row, ws_col, ws_xpixel, ws_ypixel;
 	}
 
 	int tcgetattr(int fd, Termios termios);
 
 	int tcsetattr(int fd, int optional_actions, Termios termios);
-	
+
 	int ioctl(int fd, int opt, Winsize winze);
 
 }
