@@ -1,6 +1,13 @@
 package com.texteditor.akshara;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -32,9 +39,11 @@ public class Akshara {
 	public static int cursorX = 0;
 	public static int cursorY = 0;
 
-	public static void main(String[] args) throws IOException {
-		System.out.println("Hello World!!!");
+	private static List<String> content = new ArrayList<>();
 
+	public static void main(String[] args) throws IOException {
+
+		openFile(args);
 		enableRawMode();
 		initEditor();
 
@@ -45,6 +54,31 @@ public class Akshara {
 			handleKey(key);
 
 		}
+	}
+
+	private static void openFile(String[] args) {
+		if (args.length == 1) {
+			File f = new File(args[0]);
+			if (f.exists()) {
+				try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) {
+					String line;
+					while ((line = in.readLine()) != null) {
+						content.add(line);
+					}
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
+		}
+
 	}
 
 	private static void initEditor() {
@@ -63,18 +97,19 @@ public class Akshara {
 		builder.append("\033[H");
 
 		for (int i = 0; i < rows - 1; i++) {
-			builder.append("~\r\n");
+			if (i >= content.size()) {
+				builder.append("~");
+			}else {
+				builder.append(content.get(i));
+			}
+			builder.append("\033[K\r\n");
 		}
 
 		String statusbar = APP_NAME + " - " + VERSION;
-		builder.append("\033[7m")
-			   .append(APP_NAME)
-			   .append(" - ")
-			   .append(VERSION)
-			   .append(" ".repeat(Math.max(0, columns - statusbar.length())))
-			   .append("\033[0m");
+		builder.append("\033[7m").append(APP_NAME).append(" - ").append(VERSION)
+				.append(" ".repeat(Math.max(0, columns - statusbar.length()))).append("\033[0m");
 
-		builder.append(String.format("\033[%d;%dH",cursorY + 1,cursorX + 1));
+		builder.append(String.format("\033[%d;%dH", cursorY + 1, cursorX + 1));
 
 		System.out.println(builder);
 	}
@@ -84,7 +119,7 @@ public class Akshara {
 		// if the key pressed is q exit Akshara
 		if (key == 'q') {
 			exit();
-		} else if (List.of(ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT,HOME,END).contains(key)) {
+		} else if (List.of(ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, HOME, END).contains(key)) {
 			moveCursor(key);
 		}
 
@@ -129,11 +164,10 @@ public class Akshara {
 				cursorX++;
 			}
 		}
-		
+
 		case HOME -> cursorX = 0;
-		case END ->cursorX = columns - 1;
-		
-		
+		case END -> cursorX = columns - 1;
+
 		}
 	}
 
