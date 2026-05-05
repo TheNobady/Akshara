@@ -2,6 +2,7 @@ package com.texteditor.akshara;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import com.sun.jna.Library;
 import com.sun.jna.Native;
@@ -17,14 +18,19 @@ public class Akshara {
 	private static final int ARROW_RIGHT = 1003;
 	private static final int ARROW_LEFT = 1004;
 	private static final int PAGE_UP = 1005;
-	private static final int PAGE_DOWN =1006;
+	private static final int PAGE_DOWN = 1006;
 	private static final int END = 1007;
 	private static final int DEL = 1008;
-	
+
 	public static LibC.Termios defaultAttributes;
+
+	public static String VERSION = "v1";
+
 	public static int rows = 10;
 	public static int columns = 10;
-	public static String VERSION = "v1";
+
+	public static int cursorX = 0;
+	public static int cursorY = 0;
 
 	public static void main(String[] args) throws IOException {
 		System.out.println("Hello World!!!");
@@ -34,7 +40,7 @@ public class Akshara {
 
 		while (true) {
 
-			// refreshScreen();
+			refreshScreen();
 			int key = readKey();
 			handleKey(key);
 
@@ -57,28 +63,78 @@ public class Akshara {
 		builder.append("\033[H");
 
 		for (int i = 0; i < rows - 1; i++) {
-			builder.append(">\r\n");
+			builder.append("~\r\n");
 		}
 
 		String statusbar = APP_NAME + " - " + VERSION;
-		builder.append("\033[7m").append(APP_NAME).append(" - ").append(VERSION)
-				.append(" ".repeat(Math.max(0, columns - statusbar.length()))).append("\033[0m");
+		builder.append("\033[7m")
+			   .append(APP_NAME)
+			   .append(" - ")
+			   .append(VERSION)
+			   .append(" ".repeat(Math.max(0, columns - statusbar.length())))
+			   .append("\033[0m");
 
-		builder.append("\033[H");
+		builder.append(String.format("\033[%d;%dH",cursorY + 1,cursorX + 1));
 
 		System.out.println(builder);
 	}
 
 	private static void handleKey(int key) {
+
+		// if the key pressed is q exit Akshara
 		if (key == 'q') {
-			System.out.print("\033[2J");
-			System.out.print("\033[H");
-			LibC.INSTANCE.tcsetattr(LibC.SYSTEM_IN_FD, LibC.TCSAFLUSH, defaultAttributes);
-			System.exit(1);
-		} else {
-			System.out.print(((char) key) + " -> " + key + "\r\n");
+			exit();
+		} else if (List.of(ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT,HOME,END).contains(key)) {
+			moveCursor(key);
 		}
 
+//		else {
+//			System.out.print(((char) key) + " -> " + key + "\r\n");
+//		}
+
+	}
+
+	private static void exit() {
+		// cleaning the screen
+		System.out.print("\033[2J");
+		System.out.print("\033[H");
+		// Very important switching back to cooked mode
+		LibC.INSTANCE.tcsetattr(LibC.SYSTEM_IN_FD, LibC.TCSAFLUSH, defaultAttributes);
+		System.exit(1);
+
+	}
+
+	private static void moveCursor(int key) {
+
+		switch (key) {
+		case ARROW_UP -> {
+			if (cursorY > 0) {
+				cursorY--;
+			}
+		}
+
+		case ARROW_DOWN -> {
+			if (cursorY < rows - 3)
+				cursorY++;
+		}
+
+		case ARROW_LEFT -> {
+			if (cursorX > 0) {
+				cursorX--;
+			}
+		}
+
+		case ARROW_RIGHT -> {
+			if (cursorX < columns - 1) {
+				cursorX++;
+			}
+		}
+		
+		case HOME -> cursorX = 0;
+		case END ->cursorX = columns - 1;
+		
+		
+		}
 	}
 
 	private static int readKey() throws IOException {
@@ -103,13 +159,13 @@ public class Akshara {
 			case 'D' -> ARROW_LEFT;
 			case 'H' -> HOME;
 			case 'E' -> END;
-			case '1','2','3','4','5','6','7','8','9' -> {
+			case '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
 				int andAnotherKey = System.in.read();
-				if(andAnotherKey != '~') {
+				if (andAnotherKey != '~') {
 					yield andAnotherKey;
 				}
-				
-				switch(andAnotherKey) {
+
+				switch (andAnotherKey) {
 				case '1':
 				case '7':
 					yield HOME;
@@ -122,15 +178,16 @@ public class Akshara {
 					yield PAGE_UP;
 				case '6':
 					yield PAGE_DOWN;
-				default: yield andAnotherKey;
+				default:
+					yield andAnotherKey;
 				}
 			}
 			default -> anotherKey;
 			};
 		}
-		
+
 		else {
-			return switch(nextKey) {
+			return switch (nextKey) {
 			case 'H' -> HOME;
 			case 'E' -> END;
 			default -> nextKey;
@@ -259,7 +316,7 @@ interface LibC extends Library {
 	}
 
 	// Native methods
- 
+
 	// get the default terminal attributes
 	int tcgetattr(int fd, Termios termios);
 
