@@ -19,6 +19,7 @@ public class Akshara {
 	private static final int PAGE_UP = 1005;
 	private static final int PAGE_DOWN =1006;
 	private static final int END = 1007;
+	private static final int DEL = 1008;
 	
 	public static LibC.Termios defaultAttributes;
 	public static int rows = 10;
@@ -258,7 +259,7 @@ interface LibC extends Library {
 	}
 
 	// Native methods
-
+ 
 	// get the default terminal attributes
 	int tcgetattr(int fd, Termios termios);
 
