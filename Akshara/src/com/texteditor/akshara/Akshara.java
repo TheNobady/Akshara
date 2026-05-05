@@ -38,7 +38,9 @@ public class Akshara {
 
 	public static int cursorX = 0;
 	public static int cursorY = 0;
-
+	public static int offSetY = 0;
+	public static int offSetX = 0;
+	
 	private static List<String> content = new ArrayList<>();
 
 	public static void main(String[] args) throws IOException {
@@ -48,12 +50,22 @@ public class Akshara {
 		initEditor();
 
 		while (true) {
-
+			scroll();
 			refreshScreen();
 			int key = readKey();
 			handleKey(key);
 
 		}
+	}
+
+	private static void scroll() {
+		if(cursorY >= rows + offSetY) {
+			offSetY = cursorY - rows + 1;
+		}
+		else if(cursorY < offSetY) {
+			offSetY = cursorY;
+		}
+		
 	}
 
 	private static void openFile(String[] args) {
@@ -84,7 +96,7 @@ public class Akshara {
 	private static void initEditor() {
 		LibC.Winsize winsize = getWindowSize();
 		columns = winsize.ws_col;
-		rows = winsize.ws_row;
+		rows = winsize.ws_row - 1;
 	}
 
 	private static void refreshScreen() {
@@ -93,25 +105,41 @@ public class Akshara {
 
 		// We use ANSI escape codes to manipulate the screen
 
-		builder.append("\033[2J");
+		// builder.append("\033[2J");
 		builder.append("\033[H");
 
-		for (int i = 0; i < rows - 1; i++) {
-			if (i >= content.size()) {
-				builder.append("~");
-			}else {
-				builder.append(content.get(i));
-			}
-			builder.append("\033[K\r\n");
-		}
+		drawContent(builder);
 
+		drawStatusMessage(builder);
+
+		drawCursor(builder);
+		
+		System.out.println(builder);
+	}
+
+	private static void drawCursor(StringBuilder builder) {
+		builder.append(String.format("\033[%d;%dH", cursorY - offSetY + 1, cursorX - offSetX + 1));
+
+	}
+
+	private static void drawStatusMessage(StringBuilder builder) {
 		String statusbar = APP_NAME + " - " + VERSION;
 		builder.append("\033[7m").append(APP_NAME).append(" - ").append(VERSION)
 				.append(" ".repeat(Math.max(0, columns - statusbar.length()))).append("\033[0m");
 
-		builder.append(String.format("\033[%d;%dH", cursorY + 1, cursorX + 1));
+	}
 
-		System.out.println(builder);
+	private static void drawContent(StringBuilder builder) {
+		for (int i = 0; i < rows; i++) {
+			int fileI = offSetY + i;
+			if (fileI >= content.size()) {
+				builder.append("~");
+			} else {
+				builder.append(content.get(fileI));
+			}
+			builder.append("\033[K\r\n");
+		}
+
 	}
 
 	private static void handleKey(int key) {
@@ -149,7 +177,7 @@ public class Akshara {
 		}
 
 		case ARROW_DOWN -> {
-			if (cursorY < rows - 3)
+			if (cursorY < content.size())
 				cursorY++;
 		}
 
