@@ -1,6 +1,10 @@
 /target/
 !.mvn/wrapper/maven-wrapper.jar
 
+
+##Test Classes#	
+Test.java
+Test.class
 ### STS ###
 .apt_generated
 .classpath

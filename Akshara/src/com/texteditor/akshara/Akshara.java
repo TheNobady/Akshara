@@ -40,7 +40,7 @@ public class Akshara {
 	public static int cursorY = 0;
 	public static int offSetY = 0;
 	public static int offSetX = 0;
-	
+
 	private static List<String> content = new ArrayList<>();
 
 	public static void main(String[] args) throws IOException {
@@ -59,13 +59,17 @@ public class Akshara {
 	}
 
 	private static void scroll() {
-		if(cursorY >= rows + offSetY) {
+		if (cursorY >= rows + offSetY) {
 			offSetY = cursorY - rows + 1;
-		}
-		else if(cursorY < offSetY) {
+		} else if (cursorY < offSetY) {
 			offSetY = cursorY;
 		}
 		
+//		if (cursorX >= rows + offSetX) {
+//			offSetX = cursorX - columns + 1;
+//		}else if (cursorX < offSetX) {
+//			offSetX = cursorX;
+//		}
 	}
 
 	private static void openFile(String[] args) {
@@ -113,12 +117,12 @@ public class Akshara {
 		drawStatusMessage(builder);
 
 		drawCursor(builder);
-		
-		System.out.println(builder);
+
+		System.out.print(builder);
 	}
 
 	private static void drawCursor(StringBuilder builder) {
-		builder.append(String.format("\033[%d;%dH", cursorY - offSetY + 1, cursorX - offSetX + 1));
+		builder.append(String.format("\033[%d;%dH", cursorY - offSetY + 1, cursorX  + 1));
 
 	}
 
@@ -147,7 +151,7 @@ public class Akshara {
 		// if the key pressed is q exit Akshara
 		if (key == 'q') {
 			exit();
-		} else if (List.of(ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, HOME, END).contains(key)) {
+		} else if (List.of(ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, HOME, END, PAGE_UP, PAGE_DOWN).contains(key)) {
 			moveCursor(key);
 		}
 
@@ -163,7 +167,7 @@ public class Akshara {
 		System.out.print("\033[H");
 		// Very important switching back to cooked mode
 		LibC.INSTANCE.tcsetattr(LibC.SYSTEM_IN_FD, LibC.TCSAFLUSH, defaultAttributes);
-		System.exit(1);
+		System.exit(0);
 
 	}
 
@@ -192,6 +196,20 @@ public class Akshara {
 				cursorX++;
 			}
 		}
+		case PAGE_UP, PAGE_DOWN -> {
+			if(key == PAGE_UP) {
+				cursorY = offSetY;
+			}else if(key == PAGE_DOWN) {
+				cursorY = offSetY + rows - 1;
+				if(cursorY > content.size()) {
+					cursorY = content.size();
+				}
+			}
+			
+			for (int i = 0; i < rows; i++) {
+				moveCursor(key == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+			}
+		}
 
 		case HOME -> cursorX = 0;
 		case END -> cursorX = columns - 1;
@@ -214,20 +232,20 @@ public class Akshara {
 		// catching arrow keys, home , end and page up down etc...
 		if (nextKey == '[') {
 			int anotherKey = System.in.read();
-			return switch ((char) anotherKey) {
+			return switch (anotherKey) {
 			case 'A' -> ARROW_UP;
 			case 'B' -> ARROW_DOWN;
 			case 'C' -> ARROW_RIGHT;
 			case 'D' -> ARROW_LEFT;
 			case 'H' -> HOME;
-			case 'E' -> END;
-			case '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
+			case 'F' -> END;
+			case '0','1', '2', '3', '4', '5', '6', '7', '8', '9' -> {  // e.g: esc[5~ == page_up
 				int andAnotherKey = System.in.read();
 				if (andAnotherKey != '~') {
 					yield andAnotherKey;
 				}
 
-				switch (andAnotherKey) {
+				switch (anotherKey) {
 				case '1':
 				case '7':
 					yield HOME;
@@ -251,7 +269,7 @@ public class Akshara {
 		else {
 			return switch (nextKey) {
 			case 'H' -> HOME;
-			case 'E' -> END;
+			case 'F' -> END;
 			default -> nextKey;
 			};
 		}
@@ -269,7 +287,7 @@ public class Akshara {
 		if (returnCode != 0) {
 			// internal error
 			System.err.println("Some error occured ");
-			System.exit(1);
+			System.exit(0);
 		}
 
 		// With the help of bitwise operation we negate the values, such has turn off
@@ -295,7 +313,7 @@ public class Akshara {
 
 		if (returnCode != 0) {
 			System.err.println("ioctl failed");
-			System.exit(1);
+			System.exit(0);
 		}
 
 		return winsize;
@@ -359,7 +377,7 @@ interface LibC extends Library {
 			clone.c_oflag = t.c_oflag;
 			clone.c_cflag = t.c_cflag;
 			clone.c_lflag = t.c_lflag;
-			clone.c_cc = t.c_cc;
+			clone.c_cc = t.c_cc.clone();
 			return clone;
 		}
 
