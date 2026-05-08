@@ -64,12 +64,12 @@ public class Akshara {
 		} else if (cursorY < offSetY) {
 			offSetY = cursorY;
 		}
-		
-//		if (cursorX >= rows + offSetX) {
-//			offSetX = cursorX - columns + 1;
-//		}else if (cursorX < offSetX) {
-//			offSetX = cursorX;
-//		}
+
+		if (cursorX >= columns + offSetX) {
+			offSetX = cursorX - columns + 1;
+		} else if (cursorX < offSetX) {
+			offSetX = cursorX;
+		}
 	}
 
 	private static void openFile(String[] args) {
@@ -122,7 +122,7 @@ public class Akshara {
 	}
 
 	private static void drawCursor(StringBuilder builder) {
-		builder.append(String.format("\033[%d;%dH", cursorY - offSetY + 1, cursorX  + 1));
+		builder.append(String.format("\033[%d;%dH", cursorY - offSetY + 1, cursorX - offSetX + 1));
 
 	}
 
@@ -139,7 +139,20 @@ public class Akshara {
 			if (fileI >= content.size()) {
 				builder.append("~");
 			} else {
-				builder.append(content.get(fileI));
+				String line = content.get(fileI);
+
+				int lengthToDraw = line.length() - offSetX;
+
+				if (lengthToDraw < 0) {
+					lengthToDraw = 0;
+				}
+				if (lengthToDraw > columns) {
+					lengthToDraw = columns;
+				}
+				if (lengthToDraw > 0) {
+					builder.append(line, offSetX, offSetX + lengthToDraw);
+				}
+
 			}
 			builder.append("\033[K\r\n");
 		}
@@ -151,7 +164,8 @@ public class Akshara {
 		// if the key pressed is q exit Akshara
 		if (key == 'q') {
 			exit();
-		} else if (List.of(ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, HOME, END, PAGE_UP, PAGE_DOWN).contains(key)) {
+		} else if (List.of(ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, HOME, END, PAGE_UP, PAGE_DOWN)
+				.contains(key)) {
 			moveCursor(key);
 		}
 
@@ -172,7 +186,7 @@ public class Akshara {
 	}
 
 	private static void moveCursor(int key) {
-
+		String line = currentLine();
 		switch (key) {
 		case ARROW_UP -> {
 			if (cursorY > 0) {
@@ -188,33 +202,63 @@ public class Akshara {
 		case ARROW_LEFT -> {
 			if (cursorX > 0) {
 				cursorX--;
+			} else if (cursorX == 0 && cursorY >= 1) {
+//				cursorY--;
+//				cursorX = previousLine().length();
+				moveCursor(ARROW_UP);
+				cursorX = currentLine().length();
 			}
 		}
 
 		case ARROW_RIGHT -> {
-			if (cursorX < columns - 1) {
+			if (line != null && cursorX < line.length()) {
 				cursorX++;
+			} else if (line != null && cursorX == line.length()) {
+				moveCursor(ARROW_DOWN);
+				cursorX = 0;
 			}
 		}
 		case PAGE_UP, PAGE_DOWN -> {
-			if(key == PAGE_UP) {
+
+			if (key == PAGE_UP) {
+
 				cursorY = offSetY;
-			}else if(key == PAGE_DOWN) {
+
+			} else if (key == PAGE_DOWN) {
+
 				cursorY = offSetY + rows - 1;
-				if(cursorY > content.size()) {
+
+				if (cursorY > content.size()) {
+
 					cursorY = content.size();
 				}
 			}
-			
+
 			for (int i = 0; i < rows; i++) {
 				moveCursor(key == PAGE_UP ? ARROW_UP : ARROW_DOWN);
 			}
 		}
 
 		case HOME -> cursorX = 0;
-		case END -> cursorX = columns - 1;
-
+		case END -> {
+			if (line != null) {
+				cursorX = line.length();
+			}
 		}
+		}
+		String newLine = currentLine();
+		if (newLine != null && cursorX > newLine.length()) {
+			cursorX = newLine.length();
+		}
+	}
+
+//	private static String previousLine() {
+//		// TODO Auto-generated method stub
+//		return cursorY >= 1 ? content.get(--cursorY) : null;
+//	}
+
+	private static String currentLine() {
+		return cursorY < content.size() ? content.get(cursorY) : null;
 	}
 
 	private static int readKey() throws IOException {
@@ -239,7 +283,7 @@ public class Akshara {
 			case 'D' -> ARROW_LEFT;
 			case 'H' -> HOME;
 			case 'F' -> END;
-			case '0','1', '2', '3', '4', '5', '6', '7', '8', '9' -> {  // e.g: esc[5~ == page_up
+			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> { // e.g: esc[5~ == page_up
 				int andAnotherKey = System.in.read();
 				if (andAnotherKey != '~') {
 					yield andAnotherKey;
