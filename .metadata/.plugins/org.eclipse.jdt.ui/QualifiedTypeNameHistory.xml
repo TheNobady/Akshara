@@ -10,4 +10,10 @@
     <fullyQualifiedTypeName name="java.io.BufferedReader"/>
     <fullyQualifiedTypeName name="java.io.FileInputStream"/>
     <fullyQualifiedTypeName name="com.texteditor.akshara.Akshara"/>
+    <fullyQualifiedTypeName name="com.texteditor.akshara.WindowSize"/>
+    <fullyQualifiedTypeName name="com.texteditor.akshara.Terminal"/>
+    <fullyQualifiedTypeName name="com.sun.jna.Platform"/>
+    <fullyQualifiedTypeName name="com.sun.jna.IntegerType"/>
+    <fullyQualifiedTypeName name="com.sun.jna.Pointer"/>
+    <fullyQualifiedTypeName name="com.sun.jna.CallbackReference"/>
 </qualifiedTypeNameHistroy>

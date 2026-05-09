@@ -163,7 +163,7 @@ public class Akshara {
 	private static void handleKey(int key) {
 
 		// if the key pressed is q exit Akshara
-		if (key == 'q') {
+		if (key == ctrl('q')) {
 			exit();
 		} else if (List.of(ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, HOME, END, PAGE_UP, PAGE_DOWN)
 				.contains(key)) {
@@ -174,6 +174,12 @@ public class Akshara {
 //			System.out.print(((char) key) + " -> " + key + "\r\n");
 //		}
 
+	}
+	
+	//Method to check if the input is bitwise And 'q' (ctrl + q)
+	private static int ctrl(char key) {
+		//Anding q with a bitwising it via hex value 
+		return key & 0x1f;
 	}
 
 	private static void exit() {
