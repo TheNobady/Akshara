@@ -1,11 +1,14 @@
 package com.texteditor.akshara;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +53,7 @@ public class Akshara {
 	private static Terminal terminal = Platform.isWindows() ? new WindowsTerminal()
 			: Platform.isMac() ? new MacOsTerminal() : new UnixTerminal();
 
+	private static File currentFile;
 	private static List<String> content = new ArrayList<>();
 
 	public static void main(String[] args) throws IOException {
@@ -101,6 +105,7 @@ public class Akshara {
 				}
 
 			}
+			currentFile = f;
 		}
 
 	}
@@ -181,16 +186,124 @@ public class Akshara {
 		// if the key pressed is q exit Akshara
 		if (key == ctrl('q')) {
 			exit();
+		} else if (key == ctrl('s')) {
+			editorSave();
+		} else if (key == '\r') {
+			handleEnter();
 		} else if (key == ctrl('f')) {
 			editorFind();
+		} else if (List.of(DEL, BACKSPACE, ctrl('h')).contains(key)) {
+
+			deleteChar();
+
 		} else if (List.of(ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, HOME, END, PAGE_UP, PAGE_DOWN)
 				.contains(key)) {
 			moveCursor(key);
+		} else {
+			insertChar((char) key);
 		}
 
 //		else {
 //			System.out.print(((char) key) + " -> " + key + "\r\n");
 //		}
+
+	}
+
+	private static void editorSave() {
+		try(BufferedWriter out =new BufferedWriter(new OutputStreamWriter(new FileOutputStream(currentFile), "UTF-8"))) {
+			for(String line : content) {
+				out.write(line);
+				out.newLine();
+			}
+			setStatusbar("File saved successfully ");
+		}catch (IOException e) {
+			setStatusbar("File was not saved " + e.getMessage());
+			e.printStackTrace();
+		}
+			
+	
+		
+	}
+
+	private static void deleteChar() {
+		if ((cursorX == 0 && cursorY == 0) || cursorY == content.size()) {
+			return;
+		}
+
+		if (cursorX > 0) {
+			deleteCharFromRow(cursorY, cursorX - 1);
+			cursorX--;
+		} else {
+			cursorX = content.get(cursorY - 1).length();
+			appendStringToRow(cursorY - 1, content.get(cursorY));
+			deleteRow(cursorY);
+			cursorY--;
+		}
+	}
+
+	private static void appendStringToRow(int at, String append) {
+		content.set(at, content.get(at) + append);
+
+	}
+
+	private static void deleteRow(int at) {
+		if (at < 0 || at >= content.size())
+			return;
+		content.remove(at);
+	}
+
+	private static void deleteCharFromRow(int row, int at) {
+		String line = content.get(row);
+
+		if (at < 0 || at > line.length())
+			return;
+
+		String editedLine = new StringBuilder(line).deleteCharAt(at).toString();
+
+		content.set(row, editedLine);
+
+	}
+
+	private static void handleEnter() {
+		if (cursorX == 0) {
+			insertRow(cursorY, "");
+		} else {
+			String line = content.get(cursorY);
+			insertRow(cursorY + 1, line.substring(cursorX));
+			content.set(cursorY, line.substring(0, cursorX));
+		}
+		cursorY++;
+		cursorX = 0;
+	}
+
+	private static void insertChar(char key) {
+
+		if (cursorY == content.size()) {
+			insertRow(cursorY, "");
+			cursorX = 0;
+		}
+		insertCharInRow(cursorY, cursorX, key);
+		cursorX++;
+
+	}
+
+	private static void insertRow(int at, String rowContent) {
+		if (at < 0 || at > content.size())
+			return;
+
+		content.add(at, rowContent);
+
+	}
+
+	private static void insertCharInRow(int row, int at, char key) {
+		String line = content.get(row);
+
+		if (at < 0 || at > line.length())
+			at = line.length();
+
+		String editedLine = new StringBuilder(line).insert(at, key).toString();
+
+		content.set(row, editedLine);
 
 	}
 
@@ -224,10 +337,10 @@ public class Akshara {
 			for (int i = 0; i < content.size(); i++) {
 
 				currentIndex += searchDirection == SearchDirection.FORWARDS ? 1 : -1;
-				
-				if(currentIndex == content.size()) {
+
+				if (currentIndex == content.size()) {
 					currentIndex = 0;
-				}else if (currentIndex == -1) {
+				} else if (currentIndex == -1) {
 					currentIndex = content.size() - 1;
 				}
 
@@ -263,9 +376,9 @@ public class Akshara {
 					if (!userInput.isEmpty()) {
 						userInput.deleteCharAt(userInput.length() - 1);
 
-					} 
-					
-				}else if (!Character.isISOControl(key) && key < 128) {
+					}
+
+				} else if (!Character.isISOControl(key) && key < 128) {
 					userInput.append((char) key);
 				}
 				consumer.accept(userInput.toString(), key);
