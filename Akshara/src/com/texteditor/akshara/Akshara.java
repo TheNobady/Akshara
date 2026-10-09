@@ -210,6 +210,16 @@ public class Akshara {
 	}
 
 	private static void editorSave() {
+		
+		if (currentFile == null) {
+	        // prompt user for filename
+	        prompt("Save as: %s", (filename, key) -> {
+	            if (key == '\r' && !filename.isBlank()) {
+	                currentFile = new File(filename);
+	            }
+	        });
+	        if (currentFile == null) return; // user cancelled
+	    }
 		try(BufferedWriter out =new BufferedWriter(new OutputStreamWriter(new FileOutputStream(currentFile), "UTF-8"))) {
 			for(String line : content) {
 				out.write(line);

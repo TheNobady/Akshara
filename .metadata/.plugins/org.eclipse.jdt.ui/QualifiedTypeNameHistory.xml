@@ -6,8 +6,6 @@
     <fullyQualifiedTypeName name="com.texteditor.akshara.LibC"/>
     <fullyQualifiedTypeName name="com.texteditor.akshara.LibC.Termios"/>
     <fullyQualifiedTypeName name="com.texteditor.akshara.LibC.Winsize"/>
-    <fullyQualifiedTypeName name="java.lang.StringBuilder"/>
-    <fullyQualifiedTypeName name="java.io.BufferedReader"/>
     <fullyQualifiedTypeName name="java.io.FileInputStream"/>
     <fullyQualifiedTypeName name="com.texteditor.akshara.Akshara"/>
     <fullyQualifiedTypeName name="com.texteditor.akshara.WindowSize"/>
@@ -16,4 +14,12 @@
     <fullyQualifiedTypeName name="com.sun.jna.IntegerType"/>
     <fullyQualifiedTypeName name="com.sun.jna.Pointer"/>
     <fullyQualifiedTypeName name="com.sun.jna.CallbackReference"/>
+    <fullyQualifiedTypeName name="java.lang.Character"/>
+    <fullyQualifiedTypeName name="java.util.function.BiConsumer"/>
+    <fullyQualifiedTypeName name="com.texteditor.akshara.Akshara.SearchDirection"/>
+    <fullyQualifiedTypeName name="java.lang.StringBuilder"/>
+    <fullyQualifiedTypeName name="java.io.BufferedReader"/>
+    <fullyQualifiedTypeName name="java.io.BufferedWriter"/>
+    <fullyQualifiedTypeName name="java.io.OutputStreamWriter"/>
+    <fullyQualifiedTypeName name="java.io.FileOutputStream"/>
 </qualifiedTypeNameHistroy>
